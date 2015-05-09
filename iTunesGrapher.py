@@ -23,7 +23,7 @@ def write_database(filename, database):
         cur = con.cursor()
         cur.execute("DROP TABLE IF EXISTS Tunes")
         cur.execute(
-            "CREATE TABLE Tunes(Song TEXT, Artist TEXT, Album_Artist TEXT, Album TEXT, Play_Count INT, Date_Added TEXT, "
+            "CREATE TABLE Tunes(Track_ID INT, Song TEXT, Artist TEXT, Album_Artist TEXT, Album TEXT, Play_Count INT, Date_Added TEXT, "
             "Y_Added INT, Y_M_Added INT, M_Added INT, Skip_Count INT, Genre TEXT, Kind TEXT, Size INT, Time INT, Year INT, "
             "Bit_Rate INT, Sample_Rate INT, Disabled BOOL)")
         count = 0
@@ -32,9 +32,14 @@ def write_database(filename, database):
 
             count = count + 1
 
-            sys.stdout.write('Wrote %d songs to database \r' % (count))
-
             sys.stdout.flush()
+
+            sys.stdout.write('Wrote %d songs to database \r' % count)
+
+            try:
+                track_id = pl['Tracks'][tracks]['Track ID']
+            except:
+                track_id = 0
 
             try:
                 name = pl['Tracks'][tracks]['Name']
@@ -126,13 +131,12 @@ def write_database(filename, database):
             # print name+","+artist+","+album+","+str(play_count)
 
             cur.execute(
-                "INSERT INTO Tunes (Song, Artist, Album_Artist, Album, Year, Time, Play_Count, Date_Added, Y_Added, "
+                "INSERT INTO Tunes (Track_ID, Song, Artist, Album_Artist, Album, Year, Time, Play_Count, Date_Added, Y_Added, "
                 "Y_M_Added, M_Added, Skip_Count, Genre, Kind, Size, Bit_Rate, Sample_Rate, Disabled) "
-                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
-                    name, artist, album_artist, album, track_year, time, play_count, date, year, year_month, month,
-                    skip,
-                    genre, kind, size, bit, sample, unchecked))
+                    track_id, name, artist, album_artist, album, track_year, time, play_count, date, year, year_month,
+                    month, skip, genre, kind, size, bit, sample, unchecked))
 
         print('Wrote %d songs to database \r' % count)
 
@@ -181,9 +185,10 @@ def graph_library_summary(database):
         bitrate = cur.fetchall()
         
         # -- Top 20 Most Skipped Songs --
-        #cur.execute("SELECT Song, Artist, Album, Sum(Play_Count), Sum(Skip_Count) FROM Tunes ORDER BY Sum(Skip_Count) DESC LIMIT 20")
+        cur.execute("SELECT Song, Artist, Album, Sum(Play_Count), Sum(Skip_Count) FROM Tunes GROUP BY Track_ID "
+                    "ORDER BY Sum(Skip_Count) DESC LIMIT 20")
 
-        #skipped = cur.fetchall()
+        skipped = cur.fetchall()
 
     print "---- Genres by Song Count ----"
     print genres1
@@ -194,8 +199,8 @@ def graph_library_summary(database):
     print "---- Average Bit Rate ----"
     print bitrate[0][0]
     
-    #print "---- Most Skipped Songs ----"
-    #print skipped
+    print "---- Most Skipped Songs ----"
+    print skipped
 
     dates = []
     nums = []
