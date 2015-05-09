@@ -181,8 +181,7 @@ def graph_library_summary(database):
         bitrate = cur.fetchall()
         
         # -- Top 20 Most Skipped Songs --
-        #cur.execute("SELECT Song, Artist, Album, Sum(Play_Count), Sum(Skip_Count) FROM Tunes ORDER BY Sum(Skip_Count) "
-                    "DESC LIMIT 20")
+        #cur.execute("SELECT Song, Artist, Album, Sum(Play_Count), Sum(Skip_Count) FROM Tunes ORDER BY Sum(Skip_Count) DESC LIMIT 20")
 
         #skipped = cur.fetchall()
 
