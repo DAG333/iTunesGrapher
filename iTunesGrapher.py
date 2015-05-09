@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
+import difflib #for use with fuzzywuzzy
 
 
 def write_database(filename, database):
@@ -143,12 +144,12 @@ def graph_library_summary(database):
 
         cur = con.cursor()
 
-        # -- Top 20 Most Played Artists --
+        # -- Top 13 Most Played Artists --
         cur.execute("SELECT Artist, Sum(Play_Count) FROM Tunes GROUP BY Artist ORDER BY Sum(Play_Count) DESC LIMIT 13")
 
         artists = cur.fetchall()
 
-        # -- Top 20 Most Played Albums --
+        # -- Top 13 Most Played Albums --
         cur.execute(
             "SELECT Album, Artist, Sum(Play_Count) FROM Tunes WHERE Album !='' GROUP BY Album ORDER BY Sum(Play_Count) DESC LIMIT 13")
 
@@ -178,6 +179,12 @@ def graph_library_summary(database):
         cur.execute("SELECT Avg(Bit_Rate) FROM Tunes WHERE Bit_Rate !=0")
 
         bitrate = cur.fetchall()
+        
+        # -- Top 20 Most Skipped Songs --
+        #cur.execute("SELECT Song, Artist, Album, Sum(Play_Count), Sum(Skip_Count) FROM Tunes ORDER BY Sum(Skip_Count) "
+                    "DESC LIMIT 20")
+
+        #skipped = cur.fetchall()
 
     print "---- Genres by Song Count ----"
     print genres1
@@ -187,6 +194,9 @@ def graph_library_summary(database):
 
     print "---- Average Bit Rate ----"
     print bitrate[0][0]
+    
+    #print "---- Most Skipped Songs ----"
+    #print skipped
 
     dates = []
     nums = []
@@ -268,22 +278,12 @@ def graph_library_summary(database):
     plt.show()
 
 
-def graph_genres(database):
+def graph_genres(database, printer=False):
 
     con = lite.connect(database)
 
     with con:
         cur = con.cursor()
-
-        # -- Top 20 Most Played Artists --
-        cur.execute("SELECT Artist, Sum(Play_Count) FROM Tunes GROUP BY Artist ORDER BY Sum(Play_Count) DESC LIMIT 13")
-
-        artists = cur.fetchall()
-
-        # -- Top 50 Most Played Albums --
-        cur.execute(
-            "SELECT Album, Artist, Sum(Play_Count) FROM Tunes WHERE Album !='' "
-            "GROUP BY Album ORDER BY Sum(Play_Count) DESC LIMIT 50")
 
         albums = cur.fetchall()
 
@@ -309,15 +309,11 @@ def graph_genres(database):
 
     genres = []
 
-    # print "---- Genres by Song Count ----"
-
-    #print genres1
-
     genre_names = []
     genre_nums = []
 
-    print "---- Genres by Play Count ----"
-    #print genres2
+    if printer==True:
+        print "---- Genres by Play Count ----"
 
     for i in range(0, len(genres2)):
         genre_names.append(genres2[i][0])
@@ -336,9 +332,6 @@ def graph_genres(database):
 
         choices = process.extract(curr_genre, genre_names, limit=100)
 
-        #print curr_genre
-        #print choices
-
         same = []
 
         for names in choices:
@@ -346,16 +339,16 @@ def graph_genres(database):
                 same.append(names[0])
 
         pop_list = []
-
-        print "Genre = " + curr_genre
+        if printer==True:
+            print "Genre = " + curr_genre
 
         matches = []
         matches.append(curr_genre)
 
         for y in same:
             matches.append(y)
-
-            print "Matches = " + str(y)
+            if printer==True:
+                print "Matches = " + str(y)
 
             index = genre_names.index(y)
 
@@ -390,14 +383,17 @@ def graph_genres(database):
 
             #print smart_genre_names
             #print smart_genre_nums
-            print "------"
+            
+            if printer==True:
+                print "------"
 
             fuzzy_combine(genre_names)
 
     fuzzy_combine(genre_names)
-
-    print smart_genre_names
-    print smart_genre_nums
+    
+    if printer==True:
+        print smart_genre_names
+        print smart_genre_nums
 
     graphable_names = smart_genre_names[:13]
     graphable_nums = smart_genre_nums[:13]
@@ -455,11 +451,18 @@ def main():
     if num_arguments == 1:
         print("Please provide iTunes xml file")
     elif num_arguments == 2:
-        filename = sys.argv[1]
+        file_input = sys.argv[1]
 
-        write_database(filename, "iTunes.db")
+        if file_input.endswith(".db"):
+            database = file_input
 
-        graph_library_summary("iTunes.db")
+            graph_library_summary(database)
+
+        else:
+
+            write_database(file_input, "iTunes.db")
+
+            graph_library_summary("iTunes.db")
 
     elif num_arguments == 3:
         filename = sys.argv[1]
